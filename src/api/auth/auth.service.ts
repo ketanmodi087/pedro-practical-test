@@ -9,7 +9,7 @@ export const authService = {
    * @param password - The user's password.
    * @returns An object containing the status code and a success message or throws an error.
    */
-  async login(email: string, password: string) {
+  async login(email: string, password: string): Promise<{ statusCode: number; message: string; user?: { email: string } }> {
     // Validate input parameters
     if (!email || !password) {
       throw new Error("Email and password are required");
@@ -42,9 +42,9 @@ export const authService = {
         message: "Login successful!",
         user: { email: data.email }, // Optionally return more user information
       };
-    } catch (error: any) {
+    } catch (error) {
       // Handle and throw errors appropriately
-      throw new Error(error.message || "Something went wrong during login");
+      throw new Error((error as Error).message || "Something went wrong during login");
     }
   },
 
@@ -54,7 +54,7 @@ export const authService = {
    * @param password - The user's password.
    * @returns An object containing the status code and a success message or throws an error.
    */
-  async signup(email: string, password: string) {
+  async signup(email: string, password: string): Promise<{ statusCode: number; message: string }> {
     // Validate input parameters
     if (!email || !password) {
       throw new Error("Email and password are required");
@@ -65,10 +65,10 @@ export const authService = {
       .from("users")
       .select("email")
       .eq("email", email)
-      .single();
+      .maybeSingle();
 
     // If the user already exists, throw an error
-    if (existingUser) {
+    if (existingUser || findError) {  // Use findError to handle any errors from the query
       throw new Error("Email is already registered.");
     }
 
@@ -93,9 +93,9 @@ export const authService = {
         statusCode: 200,
         message: "Sign Up successful! You can now log in.",
       };
-    } catch (error: any) {
+    } catch (error) {
       // Handle and throw errors appropriately
-      throw new Error(error.message || "Unable to Sign up.");
+      throw new Error((error as Error).message || "Unable to Sign up.");
     }
   },
 };
