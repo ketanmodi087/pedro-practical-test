@@ -10,19 +10,51 @@ const AuthForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false); // Flag to toggle between login and signup
+  const [emailError, setEmailError] = useState(""); // Error state for email
+  const [passwordError, setPasswordError] = useState(""); // Error state for password
   const [message, setMessage] = useState(""); // To display messages to the user
   const [isSuccess, setIsSuccess] = useState(false); // Flag to indicate success or failure
+
+  // Function to validate the email format
+  const isValidEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Basic email regex
+    return regex.test(email);
+  };
+
+  // Function to validate the password strength
+  const isValidPassword = (password) => {
+    return password.length >= 6; // Simple password length check
+  };
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault(); // Prevent the default form submission behavior
+
+    // Clear previous error messages
+    setEmailError("");
+    setPasswordError("");
     setMessage(""); // Clear previous messages
+
+    // Perform validations
+    let isValid = true;
+
+    if (!isValidEmail(email)) {
+      setEmailError("Please enter a valid email address.");
+      isValid = false; // Mark form as invalid
+    }
+    if (!isValidPassword(password)) {
+      setPasswordError("Password must be at least 6 characters long.");
+      isValid = false; // Mark form as invalid
+    }
+
+    // If any validation fails, stop form submission
+    if (!isValid) return;
 
     try {
       let response;
       // Call the appropriate service based on the form state (signup or login)
       if (isSignUp) {
-        response = await authService.signup(email, password); // Call signup service
+        response = await authService.signup(email, password); // Call signup service without username
       } else {
         response = await authService.login(email, password); // Call login service
       }
@@ -39,12 +71,14 @@ const AuthForm = () => {
           );
           // Redirect to home page
           router.push("/home");
-          setEmail("");
-          setPassword("");
         } else {
           // Indicate success for signup
           setIsSuccess(true);
         }
+
+        // Reset form values after successful request
+        setEmail("");
+        setPassword("");
       } else {
         // Indicate failure if status code is not 200
         setIsSuccess(false);
@@ -67,6 +101,16 @@ const AuthForm = () => {
           {/* Dynamic heading based on form state */}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Display success or error messages */}
+          {message && (
+            <div
+              className={`mt-4 text-center ${
+                isSuccess ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {message}
+            </div>
+          )}
           {/* Email input */}
           <div>
             <label
@@ -83,6 +127,10 @@ const AuthForm = () => {
               className="input input-bordered w-full"
               required // Ensure email is provided
             />
+            {emailError && (
+              <div className="text-red-600 text-sm mt-1">{emailError}</div>
+            )}{" "}
+            {/* Email error message */}
           </div>
 
           {/* Password input */}
@@ -101,6 +149,10 @@ const AuthForm = () => {
               className="input input-bordered w-full"
               required // Ensure password is provided
             />
+            {passwordError && (
+              <div className="text-red-600 text-sm mt-1">{passwordError}</div>
+            )}{" "}
+            {/* Password error message */}
           </div>
 
           {/* Submit button */}
@@ -119,17 +171,6 @@ const AuthForm = () => {
               {isSignUp ? "Log In" : "Sign Up"}
             </button>
           </p>
-
-          {/* Display success or error messages */}
-          {message && (
-            <div
-              className={`mt-4 text-center ${
-                isSuccess ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {message}
-            </div>
-          )}
         </form>
       </div>
     </div>
