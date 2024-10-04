@@ -1,26 +1,44 @@
-import { useEffect } from "react"; // Importing the useEffect hook from React
-import { useRouter } from "next/router"; // Importing the useRouter hook from Next.js
+import { useEffect, useState } from "react"; // Import React's hooks
+import { useRouter } from "next/router"; // Import Next.js useRouter hook for navigation
+import { supabase } from "../api/database/supabaseClient"; // Import the Supabase client instance
 
 const Home = () => {
-  const router = useRouter(); // Initializing the router for navigation
+  const router = useRouter(); // Initialize the router for programmatic navigation
+  const [loading, setLoading] = useState(true); // State to handle loading indicator
 
+  // useEffect hook to check if the user is logged in on component mount
   useEffect(() => {
-    // Effect to check if the user is logged in
-    const user = JSON.parse(localStorage.getItem("user_session") || "{}"); // Retrieve user session from localStorage
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession(); // Get the current user session from Supabase
 
-    // If user is not logged in, redirect to the login page
-    if (!user?.loggedIn) {
-      router.push("/"); // Redirecting to the root path
-    }
-  }, [router]); // Dependency array includes router to avoid stale closures
+      // If no session exists, redirect the user to the login page
+      if (!session) {
+        router.push("/"); // Redirect to the login page if no user is logged in
+      } else {
+        setLoading(false); // If user is logged in, stop the loading state
+      }
+    };
 
-  const handleLogout = () => {
-    // Clear user session from localStorage
-    localStorage.removeItem("user_session"); // Remove the user session
+    checkSession(); // Call the function to check the session
+  }, [router]); // Dependency on 'router' to ensure effect runs when the router changes
 
-    // Redirect to login page
-    router.push("/"); // Redirecting to the root path
+  // Function to handle logout
+  const handleLogout = async () => {
+    await supabase.auth.signOut(); // Sign out the user via Supabase
+
+    router.push("/"); // Redirect the user to the login page after logging out
   };
+
+  // Render a loading indicator while session is being checked
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
@@ -39,4 +57,4 @@ const Home = () => {
   );
 };
 
-export default Home; // Exporting the Home component
+export default Home; // Export the Home component

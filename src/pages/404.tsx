@@ -1,29 +1,28 @@
-import { useEffect } from "react"; // Importing the useEffect hook from React
-import { useRouter } from "next/router"; // Importing the useRouter hook from Next.js
+import { useEffect } from "react"; // Import React's useEffect hook for side effects
+import { useRouter } from "next/router"; // Import Next.js useRouter hook for navigation
+import { supabase } from "../api/database/supabaseClient"; // Import the Supabase client instance
 
+// Custom 404 page component
 const Custom404 = () => {
-  const router = useRouter(); // Initializing the router for navigation
+  const router = useRouter(); // Initialize the router for programmatic navigation
 
+  // useEffect hook to check user session and redirect based on session status
   useEffect(() => {
-    // Effect to check user session and handle redirection
-    const userSession = localStorage.getItem("user_session"); // Retrieve user session from localStorage
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession(); // Fetch the current session
 
-    // Check if user session exists
-    if (userSession) {
-      const session = JSON.parse(userSession); // Parse the user session
-
-      // If session is valid and user is logged in, redirect to home page
-      if (session && session.loggedIn) {
-        router.push("/home"); // Redirect to the home page
+      // If the user session exists, redirect to the home page
+      if (session) {
+        router.push("/home"); // Redirect to home if the user is logged in
       } else {
-        router.push("/"); // Redirect to the login page if not logged in
+        router.push("/"); // Redirect to the login page if no session is found
       }
-    } else {
-      router.push("/"); // Redirect to the login page if no session exists
-    }
-  }, [router]); // Dependency array includes router to avoid stale closures
+    };
 
-  return null; // No UI will be rendered as redirection occurs immediately
+    checkSession(); // Invoke the session check function
+  }, [router]); // Dependency on 'router' to ensure the effect runs when the router changes
+
+  return null; // No UI will be rendered as redirection happens immediately
 };
 
-export default Custom404; // Exporting the Custom404 component
+export default Custom404; // Export the component for use in Next.js routing

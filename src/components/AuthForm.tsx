@@ -1,107 +1,104 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { authService } from "../api/auth/auth.service"; // Importing the authentication service for handling login and signup
+import { authService } from "../api/auth/auth.service"; // Import the service that handles authentication
 
+// Main functional component for the authentication form
 const AuthForm = () => {
-  // Initializing router for navigation
-  const router = useRouter();
+  const router = useRouter(); // Hook for navigation in Next.js
 
-  // State variables for form inputs and feedback messages
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false); // Flag to toggle between login and signup
-  const [emailError, setEmailError] = useState(""); // Error state for email
-  const [passwordError, setPasswordError] = useState(""); // Error state for password
-  const [message, setMessage] = useState(""); // To display messages to the user
-  const [isSuccess, setIsSuccess] = useState(false); // Flag to indicate success or failure
+  // State management for form fields and feedback
+  const [email, setEmail] = useState(""); // To store the user's email
+  const [password, setPassword] = useState(""); // To store the user's password
+  const [isSignUp, setIsSignUp] = useState(false); // Flag to toggle between sign-up and log-in
+  const [emailError, setEmailError] = useState(""); // Store email validation errors
+  const [passwordError, setPasswordError] = useState(""); // Store password validation errors
+  const [message, setMessage] = useState(""); // Feedback message for the user (success or error)
+  const [isSuccess, setIsSuccess] = useState(false); // Success or failure flag
 
-  // Function to validate the email format
-  const isValidEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Basic email regex
+  // Utility function to validate email format using regex
+  const isValidEmail = (email: string) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
   };
 
-  // Function to validate the password strength
-  const isValidPassword = (password) => {
-    return password.length >= 6; // Simple password length check
-  };
+  // Utility function to validate password (at least 6 characters long)
+  const isValidPassword = (password: string) => password.length >= 6;
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent the default form submission behavior
+  // Function to handle form submission for both sign-up and log-in
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // Prevent default form submission behavior
 
-    // Clear previous error messages
+    // Reset previous errors and messages
     setEmailError("");
     setPasswordError("");
-    setMessage(""); // Clear previous messages
+    setMessage("");
 
-    // Perform validations
+    // Flag to track form validity
     let isValid = true;
 
+    // Email validation
     if (!isValidEmail(email)) {
       setEmailError("Please enter a valid email address.");
-      isValid = false; // Mark form as invalid
-    }
-    if (!isValidPassword(password)) {
-      setPasswordError("Password must be at least 6 characters long.");
-      isValid = false; // Mark form as invalid
+      isValid = false;
     }
 
-    // If any validation fails, stop form submission
+    // Password validation
+    if (!isValidPassword(password)) {
+      setPasswordError("Password must be at least 6 characters long.");
+      isValid = false;
+    }
+
+    // If validation fails, stop form submission
     if (!isValid) return;
 
     try {
-      let response;
-      // Call the appropriate service based on the form state (signup or login)
+      let response; // Variable to store the response from the service call
+
+      // Call the appropriate authentication service method based on the form state
       if (isSignUp) {
-        response = await authService.signup(email, password); // Call signup service without username
+        response = await authService.signup(email, password); // Signup service call
       } else {
-        response = await authService.login(email, password); // Call login service
+        response = await authService.login(email, password); // Login service call
       }
 
-      setMessage(response.message); // Display the response message
+      // Display the response message (either success or error)
+      setMessage(response.message);
 
-      // Check the response status code
+      // Check if the operation was successful
       if (response.statusCode === 200) {
+        setIsSuccess(true);
+
+        // If login is successful, redirect to the home page
         if (!isSignUp) {
-          // Store user session in localStorage upon successful login
-          localStorage.setItem(
-            "user_session",
-            JSON.stringify({ email, loggedIn: true })
-          );
-          // Redirect to home page
           router.push("/home");
-        } else {
-          // Indicate success for signup
-          setIsSuccess(true);
         }
 
-        // Reset form values after successful request
+        // Clear form fields after successful operation
         setEmail("");
         setPassword("");
       } else {
-        // Indicate failure if status code is not 200
-        setIsSuccess(false);
+        setIsSuccess(false); // If not successful, set failure state
       }
     } catch (error) {
-      // Handle error: check if it's an object and retrieve message
+      // If an error occurs, display the appropriate error message
       const errorMessage =
-        typeof error === "object" && error.message ? error.message : error; // Fallback to error if not an object
-
-      setIsSuccess(false); // Indicate failure
-      setMessage(errorMessage); // Display error message
+        typeof error === "object" && error.message ? error.message : error;
+      setIsSuccess(false);
+      setMessage(errorMessage);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <div className="bg-white p-8 rounded-lg shadow-md max-w-sm w-full">
+        {/* Dynamic heading: Sign Up or Log In */}
         <h2 className="text-2xl font-bold mb-6 text-center">
-          {isSignUp ? "Sign Up" : "Log In"}{" "}
-          {/* Dynamic heading based on form state */}
+          {isSignUp ? "Sign Up" : "Log In"}
         </h2>
+
+        {/* Form submission handler */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Display success or error messages */}
+          {/* Feedback message */}
           {message && (
             <div
               className={`mt-4 text-center ${
@@ -111,7 +108,8 @@ const AuthForm = () => {
               {message}
             </div>
           )}
-          {/* Email input */}
+
+          {/* Email input field */}
           <div>
             <label
               htmlFor="email"
@@ -125,15 +123,14 @@ const AuthForm = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input input-bordered w-full"
-              required // Ensure email is provided
+              required
             />
             {emailError && (
               <div className="text-red-600 text-sm mt-1">{emailError}</div>
-            )}{" "}
-            {/* Email error message */}
+            )}
           </div>
 
-          {/* Password input */}
+          {/* Password input field */}
           <div>
             <label
               htmlFor="password"
@@ -147,12 +144,11 @@ const AuthForm = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="input input-bordered w-full"
-              required // Ensure password is provided
+              required
             />
             {passwordError && (
               <div className="text-red-600 text-sm mt-1">{passwordError}</div>
-            )}{" "}
-            {/* Password error message */}
+            )}
           </div>
 
           {/* Submit button */}
@@ -162,7 +158,7 @@ const AuthForm = () => {
 
           {/* Toggle between login and signup */}
           <p className="text-center text-gray-500 text-xs mt-4">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
